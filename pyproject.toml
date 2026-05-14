@@ -1,0 +1,26 @@
+[project]
+name = "docsense"
+version = "0.1.0"
+description = "Multi-tenant Document Q&A Platform with Feedback Loop"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [] # Empty for now and completed by phase
+
+[tool.ruff]
+# ruff is a linter + formatter tool
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"] # E=pycodestyle, F=pyflakes, I=isort
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+    "pytest>=9.0.3",
+    "ruff>=0.15.12",
+]

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.so
+.venv/
+
+# Environment & secrets
+.env
+.env.*
+*service-account*.json
+*credentials*.json
+gcp-key*.json
+
+# Data — large files, reproducible from pipeline
+data/raw/
+data/processed/
+# data/eval_sets/ is intentionally tracked — it's our golden test set
+
+# Notebooks — commit the notebooks, ignore execution artifacts
+.ipynb_checkpoints/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+# .vscode/ intentionally not ignored — shared settings committed
+
+# Docker local overrides
+docker-compose.override.yml
