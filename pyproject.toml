@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "Multi-tenant Document Q&A Platform with Feedback Loop"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [] # Empty for now and completed by phase
+dependencies = [
+    "fastapi>=0.136.1",
+    "httpx>=0.28.1",
+    "python-dotenv>=1.2.2",
+    "streamlit>=1.57.0",
+    "uvicorn[standard]>=0.46.0",
+] # Empty for now and completed by phase
 
 [tool.ruff]
 # ruff is a linter + formatter tool
