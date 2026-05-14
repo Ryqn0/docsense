@@ -1,1 +1,1 @@
-x = 1 + 1
+# FastAPI entrypoint - implemented in Phase 1
