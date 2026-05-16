@@ -4,11 +4,17 @@ import os
 
 from fastapi import FastAPI
 
+from services.api.routers import documents
+
 app = FastAPI(
     title="DocSense API",
     description="Multi-tenant Document Q&A Platform",
     version="0.1.0",
 )
+
+app.include_router(documents.router)
+# include_router registers all routes from the router into the main app
+# The router's prefix "/documents" + route path "/upload" = GET /documents/upload
 
 
 @app.get("/health")

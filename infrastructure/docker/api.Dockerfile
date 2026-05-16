@@ -15,6 +15,8 @@ RUN uv sync --frozen --no-dev
 COPY services/api ./services/api
 # /app/services/api/main.py
 
+COPY ml ./ml
+
 # Add venv to PATH so uvicorn is found without activating
 ENV PATH="/app/.venv/bin:$PATH"
 
