@@ -1,0 +1,32 @@
+[
+  {
+    "id": "q001",
+    "question": "What does DocSense use to handle multi-tenancy?",
+    "ground_truth": "DocSense uses tenant_id filtering to ensure data isolation between tenants.",
+    "source_document": "docsense_test.txt"
+  },
+  {
+    "id": "q002",
+    "question": "What embedding model does DocSense use?",
+    "ground_truth": "DocSense uses OpenAI text-embedding-3-small for embedding document chunks.",
+    "source_document": "docsense_test.txt"
+  },
+  {
+    "id": "q003",
+    "question": "How does DocSense split documents?",
+    "ground_truth": "DocSense chunks documents into 512-token pieces using a sliding window approach.",
+    "source_document": "docsense_test.txt"
+  },
+  {
+    "id": "q004",
+    "question": "What database does DocSense use for vector storage?",
+    "ground_truth": "DocSense uses Qdrant as the vector store for storing and retrieving embeddings.",
+    "source_document": "docsense_test.txt"
+  },
+  {
+    "id": "q005",
+    "question": "What is RAG?",
+    "ground_truth": "RAG stands for Retrieval Augmented Generation, used to answer questions about uploaded documents.",
+    "source_document": "docsense_test.txt"
+  }
+]

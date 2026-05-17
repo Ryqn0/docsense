@@ -6,8 +6,10 @@ from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ml.embeddings.embedder import embed_batch
 from ml.retrieval.chunker import Chunk as TextChunk
 from ml.retrieval.chunker import chunk_text, extract_text
+from ml.retrieval.vector_store import upsert_chunks
 
 from ..database import get_db
 from ..models import Chunk as DBChunk  # ORM model
@@ -57,9 +59,7 @@ async def upload_document(
 
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413, detail="Content Too Large, MAX_FILE_SIZE exceeded"
-        )
+        raise HTTPException(status_code=413, detail="Content Too Large, MAX_FILE_SIZE exceeded")
 
         # TODO 3: save the file to disk
         # - generate a unique filename: f"{uuid.uuid4()}_{file.filename}"
@@ -121,9 +121,38 @@ async def upload_document(
 
         # Bulk insert - one round trip to DB instead of N inserts
         db.add_all(db_chunks)
+        await db.flush()
+        # Flush first so db_chunks have their UUIDs generated
 
-        # Update document status to ready
-        document.status = "ready"
+        # Embed all chunks in one API call
+        embeddings = await embed_batch([tc.content for tc in text_chunks])
+
+        # Build payloads - what Qdrant stores alongside each vector
+        payloads = [
+            {
+                "chunk_id": str(db_chunk.id),
+                "document_id": str(document.id),
+                "tenant_id": x_tenant_id,
+                "content": tc.content,
+                "chunk_index": tc.chunk_index,
+                "filename": file.filename,
+            }
+            for db_chunk, tc in zip(db_chunks, text_chunks)
+        ]
+
+        # Upsert into Qdrant
+        await upsert_chunks(
+            chunk_ids=[str(c.id) for c in db_chunks],
+            embeddings=embeddings,
+            payloads=payloads,
+        )
+
+        # Update embedding_id on each DB bunk (Qdrant ID = chunk UUID)
+        for db_chunk in db_chunks:
+            db_chunk.embedding_id = str(db_chunk.id)
+
+            # Update document status to ready
+            document.status = "ready"
 
     except Exception as e:
         document.status = "failed"

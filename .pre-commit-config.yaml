@@ -14,3 +14,4 @@ repos:
       - id: check-yaml             # validates yaml syntax
       - id: check-merge-conflict   # catches leftover merge markers
       - id: detect-private-key     # blocks accidental key commits
+      - id: check-ast              # validate Python syntax (catches TabError before commit)

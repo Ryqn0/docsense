@@ -17,6 +17,8 @@ COPY services/api ./services/api
 
 COPY ml ./ml
 
+COPY data/eval_sets ./data/eval_sets
+
 # Add venv to PATH so uvicorn is found without activating
 ENV PATH="/app/.venv/bin:$PATH"
 
