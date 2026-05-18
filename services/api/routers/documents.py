@@ -10,6 +10,7 @@ from ml.embeddings.embedder import embed_batch
 from ml.retrieval.chunker import Chunk as TextChunk
 from ml.retrieval.chunker import chunk_text, extract_text
 from ml.retrieval.vector_store import upsert_chunks
+from services.api.metrics import CHUNKS_CREATED, DOCUMENTS_UPLOADED
 
 from ..database import get_db
 from ..models import Chunk as DBChunk  # ORM model
@@ -153,6 +154,9 @@ async def upload_document(
 
             # Update document status to ready
             document.status = "ready"
+
+            DOCUMENTS_UPLOADED.inc()
+            CHUNKS_CREATED.inc(len(db_chunks))
 
     except Exception as e:
         document.status = "failed"

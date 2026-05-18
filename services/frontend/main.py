@@ -52,6 +52,10 @@ st.header("Ask a question")
 query = st.text_input("Your question", placeholder="What is...")
 top_k = st.slider("Chunks to retrieve", min_value=1, max_value=10, value=5)
 
+# Initialize session state for search results
+if "last_search" not in st.session_state:
+    st.session_state.last_search = None
+
 if st.button("Search", disabled=not query):
     with st.spinner("Searching and generating answer..."):
         r = httpx.post(
@@ -61,14 +65,56 @@ if st.button("Search", disabled=not query):
             timeout=30,
         )
     if r.status_code == 200:
-        data = r.json()
-        st.subheader("Answer")
-        st.write(data["answer"])
-        st.subheader("Sources")
-        for src in data["sources"]:
-            st.caption(f"📄 {src['filename']} · chunk {src['chunk_index']} · score {src['score']:.3f}")
+        # store result in session state - persists across re-runs
+        st.session_state.last_search = {"query": query, "data": r.json()}
     else:
         st.error(f"Search failed: {r.text}")
+
+# display last search result (survives button re-runs)
+if st.session_state.last_search:
+    data = st.session_state.last_search["data"]
+    last_query = st.session_state.last_search["query"]
+
+    st.subheader("Answer")
+    st.write(data["answer"])
+
+    st.subheader("Sources")
+    for src in data["sources"]:
+        st.caption(f"📄 {src['filename']} · chunk {src['chunk_index']} · score {src['score']:.3f}")
+
+    # Feedback buttons - appear after every answer
+    st.subheader("Was this answer helpful?")
+    col1, col2 = st.columns(2)
+
+    feedback_payload = {
+        "query": last_query,
+        "answer": data["answer"],
+        "retrieved_chunk_ids": data.get("retrieved_chunk_ids", []),
+    }
+
+    if col1.button("👍 Yes"):
+        fb = httpx.post(
+            f"{API_URL}/feedback/",
+            headers=HEADERS,
+            json={**feedback_payload, "rating": 1},
+            timeout=10,
+        )
+        if fb.status_code == 201:
+            st.success("Thanks for the feedback!")
+        else:
+            st.error("Failed: {fb.text}")
+
+    if col2.button("👎 No"):
+        fb = httpx.post(
+            f"{API_URL}/feedback/",
+            headers=HEADERS,
+            json={**feedback_payload, "rating": -1},
+            timeout=10,
+        )
+        if fb.status_code == 201:
+            st.success("Thanks - we'll improve.")
+        else:
+            st.error("Failed: {fb.text}")
 
 st.divider()
 
@@ -97,7 +143,7 @@ if st.button("Run evaluation"):
         for result in report["results"]:
             with st.expander(f"{result['id']} - {result['question']}"):
                 st.write(f"**Generated:** {result['generated_answer']}")
-                st.write(f"**Gound truth:** {result['ground_truth']}")
+                st.write(f"**Ground truth:** {result['ground_truth']}")
                 m = result["metrics"]
                 st.caption(
                     f"Faithfulness: {m['faithfulness']} · "

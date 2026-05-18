@@ -43,7 +43,7 @@ async def run_single(
     return {
         "id": item["id"],
         "question": question,
-        "ground_truh": ground_truth,
+        "ground_truth": ground_truth,
         "generated_answer": generated_answer,
         "metrics": {
             "faithfulness": round(faithfulness, 3),

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Header, HTTPException
 
 from ml.evaluation.evaluator import run_evaluation
 
-router = APIRouter(prefix="/evaluate", tags=["evaluation"])
+router = APIRouter(prefix="/evaluation", tags=["evaluation"])
 
 EVAL_SET_PATH = os.getenv("EVAL_SET_PATH", "data/eval_sets/golden_set.json")
 

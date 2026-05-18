@@ -6,15 +6,25 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from ml.retrieval.vector_store import ensure_collection
-from services.api.routers import documents, evaluation, search
+from services.api.logging_config import get_logger, setup_logging
+from services.api.metrics import router as metrics_router
+from services.api.middleware import LoggingMiddleware
+from services.api.routers import documents, evaluation, feedback, search
+
+# Set up structured logging before anything else
+setup_logging()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # runs ONCE when API starts - before accepting any requests
+    logger.info("api_starting", environment=os.getenv("ENVIRONMENT", "development"))
     await ensure_collection()
+    logger.info("qdrant_collection_ready")
     yield
     # runs ONCE when API shuts down (cleanup goes here later)
+    logger.info("api_shutdown")
 
 
 app = FastAPI(
@@ -24,9 +34,14 @@ app = FastAPI(
     lifespan=lifespan,  # register the startup/shutdown handler
 )
 
+# Middleware runs around every request (order matters - first added = outermost)
+app.add_middleware(LoggingMiddleware)
+
+app.include_router(metrics_router)
 app.include_router(documents.router)
 app.include_router(search.router)
 app.include_router(evaluation.router)
+app.include_router(feedback.router)
 # include_router registers all routes from the router into the main app
 # The router's prefix "/documents" + route path "/upload" = GET /documents/upload
 
