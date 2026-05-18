@@ -1,0 +1,66 @@
+name: CI
+
+# When to run this workflow
+on:
+  push:
+    branches: [main]        # every push to main
+  pull_request:
+    branches: [main]        # every PR targeting main
+
+jobs:
+  # ── Job 1: Lint and test ──────────────────────────────────
+  lint-and-test:
+    runs-on: ubuntu-latest  # GitHub provides this VM for free
+
+    steps:
+      # Step 1: download your code onto the VM
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: install uv (the official GitHub Action for uv)
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.14"   # pin same version as your machine
+
+      # Step 3: install all dependencies
+      - name: Install dependencies
+        run: uv sync
+
+      # Step 4: lint with ruff (catches import errors, style issues)
+      - name: Lint
+        run: uv run ruff check .
+
+      # Step 5: run the test suite
+      - name: Run tests
+        run: uv run pytest tests/ -v
+        env:
+          OPENAI_API_KEY: test-key-not-real
+          # dummy key — tests don't make real API calls
+          # real key would go in GitHub Secrets for integration tests
+
+  # ── Job 2: Verify Docker images build ─────────────────────
+  build:
+    runs-on: ubuntu-latest
+    needs: lint-and-test     # only run if lint-and-test passes
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        run: |
+          docker build \
+            -f infrastructure/docker/api.Dockerfile \
+            -t docsense-api:test \
+            .
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f infrastructure/docker/frontend.Dockerfile \
+            -t docsense-frontend:test \
+            .
