@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,6 +7,7 @@ from ml.retrieval.generator import generate_answer
 from ml.retrieval.reranker import get_chunk_feedback_scores, rerank_chunks
 from ml.retrieval.vector_store import search_chunks
 from services.api.metrics import SEARCH_REQUESTS
+from services.api.middleware import limiter
 
 from ..database import get_db
 
@@ -21,25 +22,27 @@ class SearchRequest(BaseModel):
 
 
 @router.post("/")
+@limiter.limit("10/minute")  # 10 search requests  per minute per IP
 async def search(
-    request: SearchRequest,
+    request: Request,  # required by slowapi
+    request_body: SearchRequest,  # renamed from 'request'
     x_tenant_id: str = Header(...),
     x_user_id: str = Header(...),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    if not request.query.strip():
+    if not request_body.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
     SEARCH_REQUESTS.labels(tenant_id=x_tenant_id).inc()
 
     # Step 1 - embed the query into the same vector space as the chunks
-    query_embedding = await embed_single(request.query)
+    query_embedding = await embed_single(request_body.query)
 
     # Step 2 - find top_k nearest chunks in Qdrant, filtered by tenant
     chunks = await search_chunks(
         query_embedding=query_embedding,
         tenant_id=x_tenant_id,
-        top_k=request.top_k,
+        top_k=request_body.top_k,
     )
 
     # Re-rank using accumulated feedback
@@ -53,12 +56,12 @@ async def search(
         chunks = rerank_chunks(chunks, feedback_scores)
 
     # Step 3 - generate a cited answer using the retrieved chunks
-    result = await generate_answer(request.query, chunks)
+    result = await generate_answer(request_body.query, chunks)
 
     # Step 4 - attach metadata for the client
     return {
         **result,
-        "query": request.query,
+        "query": request_body.query,
         "chunks_retrieved": len(chunks),
         "retrieved_chunk_ids": [c["chunk_id"] for c in chunks],
         # chunk_id is stored in the Qdrant payload - the PostgreSQL UUID

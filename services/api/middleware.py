@@ -2,10 +2,34 @@ import time
 import uuid
 
 from fastapi import Request, Response
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .logging_config import get_logger
 from .metrics import REQUEST_COUNT, REQUEST_LATENCY
+
+# Create limiter - identifies users by their IP address
+limiter = Limiter(key_func=get_remote_address)
+
+
+def get_real_ip(request: Request) -> str:
+    """Get real client IP, handling proxies and load balancers."""
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.client.host
+
+
+limiter = Limiter(key_func=get_real_ip)
+
+
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """Return clean JSON instead of slowapi's default HTML error."""
+    return JSONResponse(status_code=429, content={"detail": f"Rate limit exceeded: {exc.detail}"})
+
 
 logger = get_logger(__name__)
 

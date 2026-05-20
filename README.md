@@ -160,3 +160,17 @@ docsense/
 | 8 | Local K8s | kind, manifests, kubectl |
 | 9 | GCP deployment | GKE Autopilot, Artifact Registry |
 | 10 | Hardening | Rate limiting, load testing |
+
+---
+
+## 📊 Performance Baselines
+
+| Endpoint | Latency (p50) | Notes |
+|---|---|---|
+| `GET /health` | 5ms | No dependencies |
+| `GET /feedback/stats` | 9ms | Single DB query |
+| `POST /documents/upload` | 458ms | File write + chunk + embed |
+| `POST /search/` | 970ms | Embed + Qdrant + GPT-4o-mini |
+
+Load tested: 10 concurrent users, 30s, 4.83 req/s throughput.
+Rate limiting: 10 search/min per IP, 5 uploads/min per IP.

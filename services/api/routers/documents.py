@@ -2,7 +2,7 @@ import os
 import uuid
 
 import aiofiles
-from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Request, UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from ml.retrieval.chunker import Chunk as TextChunk
 from ml.retrieval.chunker import chunk_text, extract_text
 from ml.retrieval.vector_store import upsert_chunks
 from services.api.metrics import CHUNKS_CREATED, DOCUMENTS_UPLOADED
+from services.api.middleware import limiter
 
 from ..database import get_db
 from ..models import Chunk as DBChunk  # ORM model
@@ -27,7 +28,9 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB in bytes
 
 
 @router.post("/upload", status_code=201)
+@limiter.limit("5/minute")  # 5 uploads per minute per IP
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     # UploadFile = FastAPI's streaming file upload type
     # File(...) = required parameter (... means no default)

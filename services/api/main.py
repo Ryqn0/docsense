@@ -4,11 +4,12 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from slowapi.errors import RateLimitExceeded
 
 from ml.retrieval.vector_store import ensure_collection
 from services.api.logging_config import get_logger, setup_logging
 from services.api.metrics import router as metrics_router
-from services.api.middleware import LoggingMiddleware
+from services.api.middleware import LoggingMiddleware, limiter, rate_limit_exceeded_handler
 from services.api.routers import documents, evaluation, feedback, search
 
 # Set up structured logging before anything else
@@ -36,6 +37,9 @@ app = FastAPI(
 
 # Middleware runs around every request (order matters - first added = outermost)
 app.add_middleware(LoggingMiddleware)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 app.include_router(metrics_router)
 app.include_router(documents.router)
