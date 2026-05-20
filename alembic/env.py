@@ -2,7 +2,7 @@ import os
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 
 from alembic import context
 
@@ -73,6 +73,16 @@ def run_migrations_online() -> None:
     Run migrations against a live DB connection.
 
     """
+
+    # Read DATABASE_URL from environment (K8s Secret) if available
+    # Fall back to alembic.ini for local dev
+    import os
+
+    db_url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    # Alembic uses sync driver - replace asyncpg with psycopg2
+    db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+
+    """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -80,6 +90,9 @@ def run_migrations_online() -> None:
         # NullPool: don't reuse connections during migrations
         # Migrations are one-shot - pooling adds no benefit here
     )
+    """
+
+    connectable = create_engine(db_url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: docsense
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: docsense-api:local
+          # We'll build this image into kind in a moment
+          imagePullPolicy: Never
+          # Never pull from registry - use locally loaded image
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: docsense-config      # load ALL keys from ConfigMap
+            - secretRef:
+                name: docsense-secrets     # load ALL keys from Secret
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          # readinessProbe: K8s checks /health before sending traffic
+          # If /health returns non-200, pod is not Ready and gets no traffic
+          # This is why we built the /health endpoint in Phase 1

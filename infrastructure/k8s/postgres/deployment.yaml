@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: docsense
+spec:
+  replicas: 1              # one pod running at all times
+  selector:
+    matchLabels:
+      app: postgres        # this Deployment manages pods with this label
+  template:
+    metadata:
+      labels:
+        app: postgres      # pods get this label
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: docsense-secrets   # the Secret we created
+                  key: POSTGRES_USER       # which key in that Secret
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: docsense-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: docsense-secrets
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          emptyDir: {}
+          # emptyDir = temporary storage tied to the pod lifecycle
+          # data is lost when pod restarts — fine for Phase 8 dev
+          # Phase 9 uses PersistentVolumeClaim (GCP Persistent Disk)

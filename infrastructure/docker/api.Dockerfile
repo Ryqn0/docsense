@@ -19,6 +19,9 @@ COPY ml ./ml
 
 COPY data/eval_sets ./data/eval_sets
 
+COPY alembic.ini .
+COPY alembic ./alembic
+
 # Add venv to PATH so uvicorn is found without activating
 ENV PATH="/app/.venv/bin:$PATH"
 
