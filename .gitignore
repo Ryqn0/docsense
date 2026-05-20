@@ -39,3 +39,7 @@ Thumbs.db
 
 # Docker local overrides
 docker-compose.override.yml
+
+# Kubernetes local secret overrides (real values, never commit)
+infrastructure/k8s/*.local.yaml
+infrastructure/k8s/**/*.local.yaml
