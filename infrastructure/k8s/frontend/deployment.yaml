@@ -15,8 +15,9 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: docsense-frontend:local
-          imagePullPolicy: Never
+          image: europe-west9-docker.pkg.dev/docsense-496900/docsense/frontend:latest
+               # docsense-frontend:local
+          imagePullPolicy: Always    # Never
           ports:
             - containerPort: 8501
           env:

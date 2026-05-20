@@ -9,4 +9,4 @@ spec:
   ports:
     - port: 8501
       targetPort: 8501
-  type: ClusterIP
+  type: LoadBalancer      # was ClusterIP - gives a real public IP

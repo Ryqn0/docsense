@@ -15,9 +15,10 @@ spec:
     spec:
       containers:
         - name: api
-          image: docsense-api:local
+          image: europe-west9-docker.pkg.dev/docsense-496900/docsense/api:latest
+               # docsense-api:local
           # We'll build this image into kind in a moment
-          imagePullPolicy: Never
+          imagePullPolicy: Always        # Never
           # Never pull from registry - use locally loaded image
           ports:
             - containerPort: 8000
